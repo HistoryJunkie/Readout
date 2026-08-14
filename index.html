@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>READOUT — what this page can see</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161a;
+    --bg-2:#0d1013;
+    --panel:#1a2027;
+    --panel-hi:#212831;
+    --border:#2b333c;
+    --border-hi:#3a4552;
+    --text:#e7e4da;
+    --text-dim:#8996a3;
+    --text-faint:#5a6570;
+    --amber:#ffb703;
+    --amber-dim:#8a6104;
+    --teal:#5fd0c0;
+    --red:#ff6b5e;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+    --disp:'Space Grotesk', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #1a212a 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #171c22 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:14px;
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--amber);color:#1a1400;}
+
+  /* ---------- header ---------- */
+  header.bar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:14px;
+    padding:10px 18px;
+    background:rgba(13,16,19,0.88);
+    backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--border);
+    font-size:12px;
+    color:var(--text-dim);
+    flex-wrap:wrap;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);flex:none;
+    box-shadow:0 0 0 0 rgba(95,208,192,0.6); animation:pulse 2.2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(95,208,192,0.55);}
+    70%{box-shadow:0 0 0 7px rgba(95,208,192,0);}
+    100%{box-shadow:0 0 0 0 rgba(95,208,192,0);}
+  }
+  .bar strong{color:var(--text); font-weight:600; letter-spacing:.03em;}
+  .bar .sep{color:var(--border-hi);}
+  .bar .clock{font-variant-numeric:tabular-nums; color:var(--text);}
+  .bar .secure{padding:2px 7px; border-radius:3px; border:1px solid var(--border-hi); font-size:11px;}
+  .bar .secure.ok{color:var(--teal); border-color:#2c4a45;}
+  .bar .secure.bad{color:var(--red); border-color:#4a2c28;}
+  .bar .grow{flex:1;}
+  .bar button{
+    font-family:var(--mono); font-size:11px; color:var(--text-dim);
+    background:transparent; border:1px solid var(--border-hi); border-radius:4px;
+    padding:5px 10px; cursor:pointer; letter-spacing:.03em;
+  }
+  .bar button:hover{color:var(--amber); border-color:var(--amber-dim);}
+
+  /* ---------- hero ---------- */
+  .hero{padding:46px 18px 20px; max-width:1180px; margin:0 auto;}
+  .eyebrow{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.18em; color:var(--amber);
+    text-transform:uppercase; display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .eyebrow::before{content:''; width:22px; height:1px; background:var(--amber-dim);}
+  .hero h1{
+    font-family:var(--disp); font-weight:700; font-size:clamp(28px,4.4vw,46px);
+    margin:0 0 14px; letter-spacing:-0.01em; color:var(--text); max-width:16ch;
+  }
+  .hero p{color:var(--text-dim); max-width:62ch; margin:0 0 22px; font-size:14px;}
+  .hero .note{
+    font-size:12px; color:var(--text-faint); border-left:2px solid var(--border-hi);
+    padding-left:12px; max-width:60ch;
+  }
+
+  /* ---------- grid ---------- */
+  .grid{
+    max-width:1180px; margin:0 auto; padding:10px 18px 80px;
+    display:grid; gap:14px;
+    grid-template-columns:repeat(auto-fit, minmax(300px,1fr));
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:16px 16px 14px; position:relative; overflow:hidden;
+    opacity:0; transform:translateY(6px);
+    animation:reveal .5s ease forwards;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .panel{animation:none; opacity:1; transform:none;}
+    .dot{animation:none;}
+  }
+  @keyframes reveal{ to{opacity:1; transform:translateY(0);} }
+  .panel .sweep{
+    position:absolute; top:0; left:0; height:2px; width:0%;
+    background:linear-gradient(90deg, transparent, var(--amber), transparent);
+  }
+  .panel.loading .sweep{width:100%; animation:sweep 1.1s ease-in-out infinite;}
+  @keyframes sweep{ 0%{transform:translateX(-100%);} 100%{transform:translateX(100%);} }
+  @keyframes rageping{
+    0%{ transform:scale(1); opacity:1; }
+    100%{ transform:scale(2.4); opacity:0; }
+  }
+
+  .panel h2{
+    font-family:var(--disp); font-size:14px; margin:0 0 2px; color:var(--text);
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .panel h2 .code{
+    font-family:var(--mono); font-size:10px; color:var(--bg); background:var(--amber);
+    padding:2px 6px; border-radius:3px; letter-spacing:.05em; font-weight:600;
+  }
+  .panel .sub{font-size:11px; color:var(--text-faint); margin-bottom:12px;}
+  .panel .status{font-size:10.5px; letter-spacing:.05em;}
+  .panel .status.ok{color:var(--teal);}
+  .panel .status.warn{color:var(--red);}
+
+  dl.rows{margin:0; display:grid; gap:8px;}
+  dl.rows .row{
+    display:grid; grid-template-columns:104px 1fr; gap:10px; align-items:start;
+    padding-bottom:8px; border-bottom:1px dashed var(--border);
+  }
+  dl.rows .row:last-child{border-bottom:none; padding-bottom:0;}
+  dl.rows dt{color:var(--text-faint); font-size:11px; padding-top:1px;}
+  dl.rows dd{margin:0; color:var(--text); font-size:12.5px; word-break:break-word;}
+  dl.rows dd.dim{color:var(--text-dim);}
+  dl.rows dd.amber{color:var(--amber);}
+  dl.rows dd.teal{color:var(--teal);}
+  dl.rows dd.red{color:var(--red);}
+
+  .actionbtn{
+    font-family:var(--mono); font-size:11px; color:var(--bg); background:var(--amber);
+    border:none; border-radius:4px; padding:7px 11px; cursor:pointer; font-weight:600;
+    letter-spacing:.02em; margin-top:4px;
+  }
+  .actionbtn:hover{background:#ffc433;}
+  .actionbtn.secondary{
+    background:transparent; color:var(--text-dim); border:1px solid var(--border-hi);
+  }
+  .actionbtn.secondary:hover{color:var(--amber); border-color:var(--amber-dim);}
+  .actionbtn:disabled{opacity:.45; cursor:default;}
+
+  .fontgrid{display:flex; flex-wrap:wrap; gap:5px; margin-top:2px;}
+  .fontchip{
+    font-size:10.5px; padding:3px 7px; border-radius:3px; border:1px solid var(--border-hi);
+    color:var(--text-faint);
+  }
+  .fontchip.found{color:var(--teal); border-color:#2c4a45;}
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 18px 60px; color:var(--text-faint); font-size:11px;
+  }
+  footer a{color:var(--text-dim);}
+  code.inline{background:#0d1013; border:1px solid var(--border); border-radius:3px; padding:1px 5px; color:var(--amber);}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <span class="dot"></span>
+  <strong>READOUT</strong>
+  <span class="sep">/</span>
+  <span class="clock" id="clock">--:--:--</span>
+  <span class="sep">/</span>
+  <span id="secureBadge" class="secure">…</span>
+  <span class="grow"></span>
+  <button id="rescanBtn" type="button">↻ RESCAN</button>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">Self-diagnostic</div>
+  <h1>Everything visible from this tab, right now.</h1>
+  <p>No data leaves this page except two lookups you can see below (your public IP and its
+     rough location, fetched from ipapi.co so the network panel has something to show). Nothing
+     is stored or sent anywhere else — reload the page and it's gone.</p>
+  <p class="note">Some readings only appear after you grant permission (location, camera/mic
+    labels, motion) — those live in Sensors &amp; Permissions and need a secure context (HTTPS,
+    or <code class="inline">localhost</code>). Everything in <strong>Session Behavior</strong> and
+    <strong>Silent Signals</strong> below needs no prompt at all — it's the same category of
+    passive tracking session-replay tools like FullStory rely on, and it starts collecting the
+    instant this page loads.</p>
+</section>
+
+<main class="grid" id="grid"></main>
+
+<footer>
+  Built for personal use — open the page source any time to see exactly what's being read.
+  Host it over HTTPS (e.g. GitHub Pages, or a Tailscale/Caddy box on your LAN) to unlock the
+  permission-gated panels on phones too.
+</footer>
+
+<script>
+/* ---------------- helpers ---------------- */
+const $grid = document.getElementById('grid');
+const safe = (fn, fallback='—') => { try { const v = fn(); return (v===undefined||v===null||v==='') ? fallback : v; } catch(e){ return fallback; } };
+const bytes = n => { if(n==null) return '—'; const u=['B','KB','MB','GB','TB']; let i=0; n=Number(n); while(n>=1024 && i<u.length-1){n/=1024;i++;} return n.toFixed(n<10&&i>0?2:0)+' '+u[i]; };
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function cyrb53(str, seed=0){
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for(let i=0;i<str.length;i++){
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(16);
+}
+
+
+function makePanel(id, code, title, sub){
+  const el = document.createElement('div');
+  el.className = 'panel loading';
+  el.id = 'panel-'+id;
+  el.innerHTML = `
+    <div class="sweep"></div>
+    <h2>${title} <span class="code">${code}</span></h2>
+    <div class="sub">${sub}</div>
+    <div class="body"><span class="status">reading…</span></div>
+  `;
+  $grid.appendChild(el);
+  return el;
+}
+function fillPanel(el, rowsHtml, statusText, statusClass){
+  el.classList.remove('loading');
+  const body = el.querySelector('.body');
+  body.innerHTML = `<dl class="rows">${rowsHtml}</dl>` +
+    (statusText ? `<div class="status ${statusClass||'ok'}" style="margin-top:10px;">${statusText}</div>` : '');
+}
+function row(label, value, cls=''){
+  return `<div class="row"><dt>${label}</dt><dd class="${cls}">${value}</dd></div>`;
+}
+
+/* ---------------- clock ---------------- */
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString(undefined, {hour12:false});
+}
+tickClock(); setInterval(tickClock, 1000);
+
+const secure = window.isSecureContext;
+const badge = document.getElementById('secureBadge');
+badge.textContent = secure ? 'SECURE CONTEXT' : 'NOT SECURE — some panels limited';
+badge.className = 'secure ' + (secure ? 'ok' : 'bad');
+
+/* ================= BROWSER ================= */
+function panelBrowser(){
+  const el = makePanel('browser','BRW','Browser','User agent, locale, feature flags');
+  const nav = navigator;
+  const data = {
+    userAgent: safe(()=>nav.userAgent),
+    appVersion: safe(()=>nav.appVersion),
+    vendor: safe(()=>nav.vendor),
+    languages: safe(()=>nav.languages.join(', ')),
+    cookiesEnabled: safe(()=>nav.cookieEnabled),
+    doNotTrack: safe(()=>nav.doNotTrack ?? 'not set'),
+    pdfViewer: safe(()=>nav.pdfViewerEnabled),
+    webdriver: safe(()=>nav.webdriver),
+    onLine: safe(()=>nav.onLine),
+    javaEnabled: safe(()=>typeof nav.javaEnabled==='function' ? nav.javaEnabled() : 'n/a'),
+  };
+  fillPanel(el,
+    row('User Agent', `<span style="word-break:break-all;">${escapeHtml(data.userAgent)}</span>`) +
+    row('Vendor', escapeHtml(data.vendor), 'dim') +
+    row('Languages', escapeHtml(data.languages)) +
+    row('Cookies', data.cookiesEnabled, data.cookiesEnabled ? 'teal':'red') +
+    row('Do Not Track', escapeHtml(String(data.doNotTrack)), 'dim') +
+    row('Automated', data.webdriver, data.webdriver ? 'red':'dim') +
+    row('Online', data.onLine, data.onLine ? 'teal':'red')
+  );
+}
+
+/* ================= DISPLAY ================= */
+function panelDisplay(){
+  const el = makePanel('display','DSP','Display','Screen geometry and pixel math');
+  const s = screen;
+  const data = {
+    resolution: `${safe(()=>s.width)} × ${safe(()=>s.height)}`,
+    available: `${safe(()=>s.availWidth)} × ${safe(()=>s.availHeight)}`,
+    viewport: `${window.innerWidth} × ${window.innerHeight}`,
+    colorDepth: safe(()=>s.colorDepth),
+    pixelRatio: safe(()=>window.devicePixelRatio),
+    orientation: safe(()=>s.orientation.type),
+    colorGamut: safe(()=>['srgb','p3','rec2020'].find(g=>matchMedia(`(color-gamut: ${g})`).matches)) || 'srgb',
+    hdr: safe(()=>matchMedia('(dynamic-range: high)').matches ? 'yes' : 'no'),
+    reducedMotion: safe(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),
+    colorScheme: safe(()=>matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  };
+  fillPanel(el,
+    row('Resolution', data.resolution, 'amber') +
+    row('Usable area', data.available, 'dim') +
+    row('Viewport', data.viewport) +
+    row('Pixel ratio', data.pixelRatio+'×') +
+    row('Color depth', data.colorDepth+'-bit') +
+    row('Color gamut', data.colorGamut) +
+    row('Orientation', data.orientation, 'dim') +
+    row('OS theme', data.colorScheme, 'dim')
+  );
+}
+
+/* ================= HARDWARE ================= */
+function getGPU(){
+  try{
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+    if(!gl) return {renderer:'no WebGL', vendor:'—', glsl:'—', maxViewport:'—'};
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return {
+      renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'hidden by browser',
+      vendor: ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : 'hidden by browser',
+      glsl: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
+      maxViewport: gl.getParameter(gl.MAX_VIEWPORT_DIMS).join(' × '),
+    };
+  }catch(e){ return {renderer:'—', vendor:'—', glsl:'—', maxViewport:'—'}; }
+}
+function measureRefreshRate(){
+  return new Promise(resolve=>{
+    let frames = 0;
+    const start = performance.now();
+    function tick(t){
+      frames++;
+      if(t - start < 500){ requestAnimationFrame(tick); }
+      else resolve(Math.round(frames / ((t-start)/1000)));
+    }
+    requestAnimationFrame(tick);
+  });
+}
+async function panelHardware(){
+  const el = makePanel('hardware','HDW','Hardware','CPU, memory, GPU and display-refresh signals');
+  const gpu = getGPU();
+  const refreshRate = await measureRefreshRate();
+  const data = {
+    platform: safe(()=>navigator.platform),
+    cores: safe(()=>navigator.hardwareConcurrency),
+    memory: safe(()=>navigator.deviceMemory ? navigator.deviceMemory+' GB (approx)' : 'not exposed'),
+    maxTouchPoints: safe(()=>navigator.maxTouchPoints),
+    gpuRenderer: gpu.renderer,
+    gpuVendor: gpu.vendor,
+    glsl: gpu.glsl,
+    maxViewport: gpu.maxViewport,
+    refreshRate,
+  };
+  fillPanel(el,
+    row('Platform', escapeHtml(data.platform)) +
+    row('CPU cores', data.cores, 'amber') +
+    row('Device memory', data.memory) +
+    row('Max touch pts', data.maxTouchPoints) +
+    row('Screen refresh rate', `~${refreshRate} Hz (measured)`, 'amber') +
+    row('GLSL version', escapeHtml(String(data.glsl)), 'dim') +
+    row('Max viewport', data.maxViewport, 'dim') +
+    row('GPU vendor', escapeHtml(String(data.gpuVendor)), 'dim') +
+    row('GPU renderer', escapeHtml(String(data.gpuRenderer)), 'dim')
+  );
+}
+
+/* ================= NETWORK (local, sync parts) ================= */
+function panelNetworkLocal(){
+  const el = makePanel('network','NET','Network','Connection quality and what your IP reveals');
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const data = {
+    effectiveType: safe(()=>conn.effectiveType),
+    downlink: safe(()=>conn.downlink ? conn.downlink+' Mbps' : null),
+    rtt: safe(()=>conn.rtt ? conn.rtt+' ms' : null),
+    saveData: safe(()=>conn.saveData),
+  };
+  fillPanel(el,
+    row('Effective type', data.effectiveType) +
+    row('Downlink', data.downlink) +
+    row('RTT', data.rtt) +
+    row('Data saver', data.saveData) +
+    row('Public IP', '<span id="ipVal">looking up…</span>') +
+    row('IP location', '<span id="ipLocVal">looking up…</span>', 'dim') +
+    row('ISP / org', '<span id="ipOrgVal">—</span>', 'dim')
+  );
+  fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
+    const ipEl = document.getElementById('ipVal');
+    const locEl = document.getElementById('ipLocVal');
+    const orgEl = document.getElementById('ipOrgVal');
+    if(ipEl) ipEl.textContent = d.ip || '—';
+    if(locEl) locEl.textContent = [d.city, d.region, d.country_name].filter(Boolean).join(', ') || '—';
+    if(orgEl) orgEl.textContent = d.org || '—';
+    flagTimezoneMismatch(d);
+  }).catch(()=>{
+    const ipEl = document.getElementById('ipVal');
+    const locEl = document.getElementById('ipLocVal');
+    if(ipEl) ipEl.textContent = 'lookup blocked/offline';
+    if(locEl) locEl.textContent = '—';
+  });
+}
+
+/* ---- LAN: what WebRTC's ICE gathering exposes without any prompt ---- */
+function isPrivateIPv4(ip){
+  const p = ip.split('.').map(Number);
+  if(p.length!==4 || p.some(n=>isNaN(n))) return false;
+  if(p[0]===10) return true;
+  if(p[0]===172 && p[1]>=16 && p[1]<=31) return true;
+  if(p[0]===192 && p[1]===168) return true;
+  if(p[0]===169 && p[1]===254) return true; // link-local
+  return false;
+}
+function classifyCandidate(ip){
+  if(ip.endsWith('.local')) return 'obfuscated';
+  if(ip.includes(':')) return 'ipv6'; // IPv6 candidates are effectively public/routable, not a distinct leak
+  if(isPrivateIPv4(ip)) return 'private';
+  return 'public';
+}
+function gatherIceCandidates(timeoutMs=1200){
+  return new Promise(resolve=>{
+    const found = new Set();
+    try{
+      const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+      pc.createDataChannel('probe');
+      pc.onicecandidate = e=>{
+        if(e.candidate && e.candidate.candidate){
+          const m = e.candidate.candidate.match(/candidate:\S+ \d+ \S+ \d+ (\S+) /);
+          if(m) found.add(m[1]);
+        }
+      };
+      pc.createOffer().then(o=>pc.setLocalDescription(o)).catch(()=>{});
+      setTimeout(()=>{ pc.close(); resolve([...found]); }, timeoutMs);
+    }catch(e){ resolve([]); }
+  });
+}
+async function panelLAN(){
+  const el = makePanel('lan','LAN','Local Network','What WebRTC exposes about your network path, no prompt required');
+  const candidates = await gatherIceCandidates();
+  const classified = candidates.map(c=>({ip:c, type:classifyCandidate(c)}));
+  const priv = classified.filter(c=>c.type==='private');
+  const pub = classified.filter(c=>c.type==='public' || c.type==='ipv6');
+  const obf = classified.filter(c=>c.type==='obfuscated');
+  fillPanel(el,
+    row('ICE candidates found', candidates.length) +
+    row('Private IP leaked', priv.length ? escapeHtml(priv.map(c=>c.ip).join(', ')) : 'none — good', priv.length?'red':'teal') +
+    row('Public IP via STUN', pub.length ? escapeHtml(pub.map(c=>c.ip).join(', ')) : 'none seen', 'dim') +
+    row('mDNS-obfuscated', obf.length ? `${obf.length} hidden behind .local` : 'n/a', 'dim'),
+    priv.length
+      ? 'a private/internal address (home LAN or carrier CGNAT) is exposed via WebRTC, separately from your public IP'
+      : 'no private address exposed — modern browsers mask this by default',
+    priv.length ? 'warn' : 'ok'
+  );
+}
+
+/* ================= LOCATION & TIME ================= */
+function panelTime(){
+  const el = makePanel('time','TME','Time & Locale','Timezone and formatting your device reveals');
+  const opts = Intl.DateTimeFormat().resolvedOptions();
+  const data = {
+    timezone: safe(()=>opts.timeZone),
+    locale: safe(()=>opts.locale),
+    utcOffset: safe(()=>{ const m=-new Date().getTimezoneOffset(); const s=m>=0?'+':'-'; return `UTC${s}${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`; }),
+    calendar: safe(()=>opts.calendar),
+    numberingSystem: safe(()=>opts.numberingSystem),
+  };
+  fillPanel(el,
+    row('Timezone', data.timezone, 'amber') +
+    row('UTC offset', data.utcOffset) +
+    row('Locale', data.locale) +
+    row('Calendar', data.calendar, 'dim') +
+    row('Numbering', data.numberingSystem, 'dim') +
+    `<div class="row"><dt>Precise location</dt><dd><button class="actionbtn" id="geoBtn" type="button">Request GPS location</button></dd></div>`
+  );
+  document.getElementById('geoBtn').addEventListener('click', (e)=>{
+    if(!navigator.geolocation){ e.target.textContent='not supported'; return; }
+    e.target.textContent = 'requesting…'; e.target.disabled = true;
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const c = pos.coords;
+      const row2 = document.createElement('div');
+      row2.className='row';
+      row2.innerHTML = `<dt>GPS fix</dt><dd class="teal">${c.latitude.toFixed(5)}, ${c.longitude.toFixed(5)} (±${Math.round(c.accuracy)}m)</dd>`;
+      e.target.closest('.row').replaceWith(row2);
+    }, err=>{
+      e.target.textContent = 'denied / unavailable'; e.target.disabled = true;
+    });
+  });
+}
+
+/* ================= STORAGE ================= */
+async function panelStorage(){
+  const el = makePanel('storage','STG','Storage','What this origin can already stash on disk');
+  let ls=false, ss=false, idb=false;
+  try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); ls=true; }catch(e){}
+  try{ sessionStorage.setItem('__t','1'); sessionStorage.removeItem('__t'); ss=true; }catch(e){}
+  idb = !!window.indexedDB;
+  let estimate = null;
+  try{ if(navigator.storage && navigator.storage.estimate) estimate = await navigator.storage.estimate(); }catch(e){}
+  const cookies = document.cookie ? document.cookie.split('; ').map(c=>c.split('=')[0]) : [];
+  const data = {
+    localStorage: ls, sessionStorage: ss, indexedDB: idb,
+    quota: estimate ? bytes(estimate.quota) : 'n/a',
+    usage: estimate ? bytes(estimate.usage) : 'n/a',
+    cookieCount: cookies.length,
+  };
+  fillPanel(el,
+    row('localStorage', ls, ls?'teal':'red') +
+    row('sessionStorage', ss, ss?'teal':'red') +
+    row('indexedDB', idb, idb?'teal':'red') +
+    row('Quota available', data.quota, 'amber') +
+    row('Currently used', data.usage, 'dim') +
+    row('Cookies on this page', cookies.length ? `${cookies.length}: ${escapeHtml(cookies.join(', '))}` : 'none set', cookies.length?'amber':'dim')
+  );
+}
+
+/* ================= SENSORS & PERMISSIONS ================= */
+async function panelSensors(){
+  const el = makePanel('sensors','SNS','Sensors & Permissions','Everything gated behind a user prompt');
+  let battery = null;
+  try{ if(navigator.getBattery) battery = await navigator.getBattery(); }catch(e){}
+  const perms = ['camera','microphone','geolocation','notifications','clipboard-read'];
+  const permResults = {};
+  if(navigator.permissions){
+    for(const p of perms){
+      try{ const s = await navigator.permissions.query({name:p}); permResults[p]=s.state; }
+      catch(e){ permResults[p]='n/a'; }
+    }
+  }
+  const permRows = Object.entries(permResults).map(([k,v])=>{
+    const cls = v==='granted' ? 'teal' : v==='denied' ? 'red' : 'dim';
+    return row(k, v, cls);
+  }).join('');
+  fillPanel(el,
+    (battery ? row('Battery', `${Math.round(battery.level*100)}% ${battery.charging?'(charging)':'(on battery)'}`, 'amber') : row('Battery API', 'not exposed', 'dim')) +
+    permRows +
+    `<div class="row"><dt>Devices</dt><dd><button class="actionbtn" id="devBtn" type="button">Reveal camera/mic labels</button></dd></div>` +
+    `<div class="row"><dt>Motion</dt><dd><button class="actionbtn secondary" id="motionBtn" type="button">Enable motion sensor</button></dd></div>`
+  );
+  document.getElementById('devBtn').addEventListener('click', async (e)=>{
+    e.target.textContent='requesting…'; e.target.disabled=true;
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true, video:true});
+      stream.getTracks().forEach(t=>t.stop());
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const list = devices.map(d=>`${d.kind}: ${escapeHtml(d.label||'unnamed')}`).join('<br>');
+      const wrap = document.createElement('div');
+      wrap.className='row';
+      wrap.innerHTML = `<dt>Devices found</dt><dd class="teal" style="font-size:11px;">${list||'none'}</dd>`;
+      e.target.closest('.row').replaceWith(wrap);
+    }catch(err){
+      e.target.textContent='denied'; 
+    }
+  });
+  document.getElementById('motionBtn').addEventListener('click', async (e)=>{
+    if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+      try{
+        const res = await DeviceMotionEvent.requestPermission();
+        e.target.textContent = res;
+      }catch(err){ e.target.textContent='denied'; }
+    } else if (window.DeviceMotionEvent) {
+      e.target.textContent = 'available (no prompt needed)';
+    } else {
+      e.target.textContent = 'not supported';
+    }
+    e.target.disabled = true;
+  });
+}
+
+/* ================= FINGERPRINT ================= */
+function canvasFingerprint(){
+  const c = document.createElement('canvas');
+  c.width=280; c.height=60;
+  const ctx = c.getContext('2d');
+  ctx.textBaseline='top';
+  ctx.font='16px "IBM Plex Mono"';
+  ctx.fillStyle='#f60';
+  ctx.fillRect(0,0,280,60);
+  ctx.fillStyle='#069';
+  ctx.fillText('read0ut fingerprint 度 😀', 4, 4);
+  ctx.fillStyle='rgba(255,120,0,0.6)';
+  ctx.fillText('read0ut fingerprint 度 😀', 6, 18);
+  return c.toDataURL();
+}
+function probeFonts(){
+  const testFonts = ['Arial','Verdana','Times New Roman','Courier New','Georgia','Comic Sans MS','Impact','Trebuchet MS','Segoe UI','Helvetica Neue','Menlo','Consolas','Monaco','Cambria','Tahoma'];
+  const baseFonts = ['monospace','sans-serif','serif'];
+  const testStr = 'mmmmmmmmmmlli';
+  const testSize = '72px';
+  const span = document.createElement('span');
+  span.style.cssText = `position:absolute; left:-9999px; font-size:${testSize}; visibility:hidden;`;
+  span.textContent = testStr;
+  document.body.appendChild(span);
+  const baseSizes = {};
+  baseFonts.forEach(bf=>{ span.style.fontFamily = bf; baseSizes[bf] = span.offsetWidth; });
+  const found = testFonts.filter(f=>{
+    return baseFonts.some(bf=>{
+      span.style.fontFamily = `'${f}', ${bf}`;
+      return span.offsetWidth !== baseSizes[bf];
+    });
+  });
+  document.body.removeChild(span);
+  return {found, tested: testFonts};
+}
+function panelFingerprint(){
+  const el = makePanel('fingerprint','FGP','Fingerprint Surface','Signals that combine to re-identify this browser');
+  const dataUrl = canvasFingerprint();
+  const hash = cyrb53(dataUrl);
+  const fonts = probeFonts();
+  let audioSampleRate = safe(()=>{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC(); const rate = ac.sampleRate; ac.close(); return rate+' Hz';
+  });
+  fillPanel(el,
+    row('Canvas hash', `<span class="amber">${hash}</span>`) +
+    row('Audio sample rate', audioSampleRate, 'dim') +
+    row('Fonts detected', `${fonts.found.length} / ${fonts.tested.length} probed`) +
+    `<div class="fontgrid">` + fonts.tested.map(f=>`<span class="fontchip ${fonts.found.includes(f)?'found':''}">${f}</span>`).join('') + `</div>`
+  );
+}
+
+/* ================= PERFORMANCE ================= */
+function panelPerformance(){
+  const el = makePanel('perf','PRF','Performance','Timing + memory exposed by the Performance API');
+  const nav = performance.getEntriesByType('navigation')[0];
+  const mem = performance.memory;
+  const data = {
+    loadTime: nav ? Math.round(nav.loadEventEnd) + ' ms' : 'n/a',
+    domInteractive: nav ? Math.round(nav.domInteractive) + ' ms' : 'n/a',
+    transferSize: nav ? bytes(nav.transferSize) : 'n/a',
+    redirects: nav ? nav.redirectCount : 'n/a',
+    jsHeap: mem ? bytes(mem.usedJSHeapSize) + ' / ' + bytes(mem.jsHeapSizeLimit) : 'not exposed (Chrome only)',
+  };
+  fillPanel(el,
+    row('Page load', data.loadTime) +
+    row('DOM interactive', data.domInteractive, 'dim') +
+    row('Transfer size', data.transferSize) +
+    row('Redirects', data.redirects, 'dim') +
+    row('JS heap used/limit', data.jsHeap, 'amber')
+  );
+}
+
+/* ================= SESSION BEHAVIOR (passive, no prompts) ================= */
+const sessionState = {
+  mouseDist:0, lastX:null, lastY:null,
+  clicks:0, lastClick:null,
+  maxScroll:0,
+  tabSwitches:0,
+  lastActivity:Date.now(),
+  clipboardEvents:0,
+  startTime:Date.now(),
+  keyEvents:0,
+};
+window.addEventListener('mousemove', e=>{
+  if(sessionState.lastX!==null){
+    sessionState.mouseDist += Math.hypot(e.clientX-sessionState.lastX, e.clientY-sessionState.lastY);
+  }
+  sessionState.lastX=e.clientX; sessionState.lastY=e.clientY;
+  sessionState.lastActivity = Date.now();
+}, {passive:true});
+window.addEventListener('click', e=>{
+  sessionState.clicks++;
+  sessionState.lastClick = {x:e.clientX, y:e.clientY};
+  sessionState.lastActivity = Date.now();
+  registerRageClick(e.clientX, e.clientY);
+}, {passive:true});
+window.addEventListener('scroll', ()=>{
+  const doc = document.documentElement;
+  const pct = doc.scrollHeight>window.innerHeight ? Math.round((window.scrollY/(doc.scrollHeight-window.innerHeight))*100) : 0;
+  sessionState.maxScroll = Math.max(sessionState.maxScroll, pct);
+  sessionState.lastActivity = Date.now();
+}, {passive:true});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) sessionState.tabSwitches++;
+});
+['keydown','touchstart','pointerdown'].forEach(ev=>{
+  window.addEventListener(ev, ()=>{ sessionState.lastActivity = Date.now(); if(ev==='keydown') sessionState.keyEvents++; }, {passive:true});
+});
+['copy','cut','paste'].forEach(ev=>{
+  window.addEventListener(ev, ()=>{ sessionState.clipboardEvents++; });
+});
+
+let sessionInterval = null;
+function panelSession(){
+  const el = makePanel('session','SES','Session Behavior','Tracked passively, live, no prompts — this is the FullStory-style layer');
+  el.classList.remove('loading');
+  const body = el.querySelector('.body');
+  body.innerHTML = `<dl class="rows">
+    ${row('Time on page','<span id="ss_time">0s</span>')}
+    ${row('Mouse traveled','<span id="ss_mouse">0</span> px','amber')}
+    ${row('Clicks','<span id="ss_clicks">0</span>')}
+    ${row('Max scroll depth','<span id="ss_scroll">0</span>%')}
+    ${row('Tab switches away','<span id="ss_tabs">0</span>')}
+    ${row('Idle time','<span id="ss_idle">0</span>s')}
+    ${row('Keystrokes (count only)','<span id="ss_keys">0</span>','dim')}
+    ${row('Copy/cut/paste events','<span id="ss_clip">0</span>')}
+    ${row('Referrer', escapeHtml(document.referrer || 'direct / none'), 'dim')}
+    ${row('History length', history.length, 'dim')}
+  </dl>`;
+  if(sessionInterval) clearInterval(sessionInterval);
+  const upd = ()=>{
+    const g = id => document.getElementById(id);
+    if(!g('ss_time')) return; // panel was replaced by a rescan
+    g('ss_time').textContent = Math.round((Date.now()-sessionState.startTime)/1000)+'s';
+    g('ss_mouse').textContent = Math.round(sessionState.mouseDist).toLocaleString();
+    g('ss_clicks').textContent = sessionState.clicks;
+    g('ss_scroll').textContent = sessionState.maxScroll;
+    g('ss_tabs').textContent = sessionState.tabSwitches;
+    g('ss_idle').textContent = Math.round((Date.now()-sessionState.lastActivity)/1000);
+    g('ss_keys').textContent = sessionState.keyEvents;
+    g('ss_clip').textContent = sessionState.clipboardEvents;
+  };
+  upd();
+  sessionInterval = setInterval(upd, 500);
+}
+
+/* ================= RAGE CLICKS + FORM INTERACTION (no prompts) ================= */
+const rageState = {
+  recent:[],       // {x,y,t} rolling buffer
+  count:0,
+  lastRageAt:null,
+};
+const RAGE_WINDOW_MS = 1000;
+const RAGE_RADIUS_PX = 40;
+const RAGE_THRESHOLD = 3;
+
+function registerRageClick(x, y){
+  const now = Date.now();
+  rageState.recent.push({x,y,t:now});
+  rageState.recent = rageState.recent.filter(c=>now-c.t <= RAGE_WINDOW_MS);
+  const cluster = rageState.recent.filter(c=>Math.hypot(c.x-x, c.y-y) <= RAGE_RADIUS_PX);
+  if(cluster.length >= RAGE_THRESHOLD){
+    rageState.count++;
+    rageState.lastRageAt = now;
+    rageState.recent = []; // reset so one burst doesn't count multiple times
+    spawnRageFlash(x, y);
+  }
+}
+function spawnRageFlash(x, y){
+  const ring = document.createElement('div');
+  ring.style.cssText = `position:fixed; left:${x}px; top:${y}px; width:16px; height:16px;
+    margin:-8px 0 0 -8px; border:2px solid var(--red); border-radius:50%; pointer-events:none;
+    z-index:9999; animation:rageping .6s ease-out forwards;`;
+  document.body.appendChild(ring);
+  setTimeout(()=>ring.remove(), 650);
+}
+
+const formState = {
+  focusedAt:null,
+  keystrokes:0,
+  backspaces:0,
+  pastes:0,
+  focusCount:0,
+  abandonCount:0,
+  lastDwellMs:null,
+  hadInputSinceFocus:false,
+};
+function wireSandboxInput(input){
+  input.addEventListener('focus', ()=>{
+    formState.focusedAt = Date.now();
+    formState.focusCount++;
+    formState.hadInputSinceFocus = false;
+  });
+  input.addEventListener('blur', ()=>{
+    if(formState.focusedAt){
+      formState.lastDwellMs = Date.now() - formState.focusedAt;
+      if(!formState.hadInputSinceFocus) formState.abandonCount++;
+    }
+    formState.focusedAt = null;
+  });
+  input.addEventListener('keydown', e=>{
+    formState.keystrokes++;
+    formState.hadInputSinceFocus = true;
+    if(e.key === 'Backspace' || e.key === 'Delete') formState.backspaces++;
+  });
+  input.addEventListener('paste', ()=>{ formState.pastes++; formState.hadInputSinceFocus = true; });
+}
+
+let interactionInterval = null;
+function panelInteraction(){
+  const el = makePanel('interaction','INT','Interaction Signals','Rage clicks and form behavior — click the button below a few times fast, or type in the box');
+  el.classList.remove('loading');
+  const body = el.querySelector('.body');
+  body.innerHTML = `
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+      <button class="actionbtn secondary" id="rageBait" type="button">Click me repeatedly</button>
+      <input id="formBait" type="text" placeholder="type here, nothing is captured but timing/counts"
+        style="flex:1; min-width:180px; background:#0d1013; border:1px solid var(--border-hi); border-radius:4px;
+        color:var(--text); font-family:var(--mono); font-size:12px; padding:7px 9px;">
+    </div>
+    <dl class="rows">
+      ${row('Rage clicks detected', '<span id="in_rage">0</span>', 'red')}
+      ${row('Last rage click', '<span id="in_rage_at">none yet</span>', 'dim')}
+      ${row('Field focus count', '<span id="in_focus">0</span>')}
+      ${row('Last dwell time', '<span id="in_dwell">—</span>')}
+      ${row('Keystrokes in field', '<span id="in_keys">0</span>', 'dim')}
+      ${row('Backspaces', '<span id="in_bksp">0</span>', 'dim')}
+      ${row('Pastes into field', '<span id="in_paste">0</span>')}
+      ${row('Focused but abandoned', '<span id="in_abandon">0</span>', 'amber')}
+    </dl>`;
+  const baitBtn = document.getElementById('rageBait');
+  let busy = false;
+  baitBtn.addEventListener('click', ()=>{
+    if(busy) return; // stays clickable, just visually stalls to bait more clicks
+    busy = true;
+    baitBtn.textContent = 'thinking…';
+    setTimeout(()=>{ baitBtn.textContent = 'Click me repeatedly'; busy = false; }, 1500);
+  });
+  wireSandboxInput(document.getElementById('formBait'));
+
+  if(interactionInterval) clearInterval(interactionInterval);
+  const upd = ()=>{
+    const g = id => document.getElementById(id);
+    if(!g('in_rage')) return;
+    g('in_rage').textContent = rageState.count;
+    g('in_rage_at').textContent = rageState.lastRageAt ? new Date(rageState.lastRageAt).toLocaleTimeString() : 'none yet';
+    g('in_focus').textContent = formState.focusCount;
+    g('in_dwell').textContent = formState.lastDwellMs!=null ? (formState.lastDwellMs/1000).toFixed(1)+'s' : (formState.focusedAt ? ((Date.now()-formState.focusedAt)/1000).toFixed(1)+'s (focused now)' : '—');
+    g('in_keys').textContent = formState.keystrokes;
+    g('in_bksp').textContent = formState.backspaces;
+    g('in_paste').textContent = formState.pastes;
+    g('in_abandon').textContent = formState.abandonCount;
+  };
+  upd();
+  interactionInterval = setInterval(upd, 400);
+}
+
+/* ================= SILENT SIGNALS (no prompts, easy to miss) ================= */
+function detectAdblock(){
+  return new Promise(resolve=>{
+    const bait = document.createElement('div');
+    bait.className = 'ad ads adsbox ad-banner adsbygoogle';
+    bait.style.cssText = 'position:absolute; left:-9999px; width:1px; height:1px;';
+    document.body.appendChild(bait);
+    setTimeout(()=>{
+      const blocked = bait.offsetParent===null || bait.offsetHeight===0 || getComputedStyle(bait).display==='none';
+      bait.remove();
+      resolve(blocked);
+    }, 100);
+  });
+}
+function getVoicesAsync(){
+  return new Promise(resolve=>{
+    let voices = speechSynthesis.getVoices();
+    if(voices.length){ resolve(voices); return; }
+    speechSynthesis.onvoiceschanged = ()=> resolve(speechSynthesis.getVoices());
+    setTimeout(()=>resolve(speechSynthesis.getVoices()), 400); // fallback if event never fires
+  });
+}
+function webglExtras(){
+  try{
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl2') || c.getContext('webgl');
+    if(!gl) return {extCount:0, maxTexture:'—', isWebgl2:false};
+    return {
+      extCount: gl.getSupportedExtensions().length,
+      maxTexture: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+      isWebgl2: !!c.getContext('webgl2'),
+    };
+  }catch(e){ return {extCount:0, maxTexture:'—', isWebgl2:false}; }
+}
+async function panelSilent(){
+  const el = makePanel('silent','SIG','Silent Signals','No permission dialog ever appears for any of these');
+  const [adblocked, voices] = await Promise.all([detectAdblock(), getVoicesAsync()]);
+  const gl = webglExtras();
+  const uaData = navigator.userAgentData;
+  const cssFeatures = {
+    'grid': CSS.supports('display','grid'),
+    'backdrop-filter': CSS.supports('backdrop-filter','blur(1px)'),
+    'container-queries': CSS.supports('container-type','inline-size'),
+    ':has()': CSS.supports('selector(:has(a))'),
+  };
+  const resources = performance.getEntriesByType('resource').length;
+  const gamepads = safe(()=>navigator.getGamepads().filter(Boolean).length, 0);
+  const standalone = safe(()=>matchMedia('(display-mode: standalone)').matches || window.navigator.standalone, false);
+  const capabilities = {
+    'Vibration': !!navigator.vibrate,
+    'Web Share': !!navigator.share,
+    'Wake Lock': !!navigator.wakeLock,
+    'Gamepad API': !!navigator.getGamepads,
+    'Bluetooth': !!navigator.bluetooth,
+    'USB': !!navigator.usb,
+  };
+  const data = {
+    adblocked, voiceCount: voices.length,
+    voiceSample: voices.slice(0,4).map(v=>v.name+' ('+v.lang+')'),
+    webglExtCount: gl.extCount, webgl2: gl.isWebgl2, maxTexture: gl.maxTexture,
+    uaPlatform: safe(()=>uaData.platform), uaMobile: safe(()=>uaData.mobile),
+    resourcesLoaded: resources, cssFeatures,
+    pointerType: safe(()=>matchMedia('(pointer: coarse)').matches ? 'coarse (touch)' : 'fine (mouse)'),
+    hover: safe(()=>matchMedia('(hover: hover)').matches),
+    gamepads, standalone,
+  };
+  fillPanel(el,
+    row('Ad blocker', adblocked ? 'detected' : 'not detected', adblocked ? 'red':'teal') +
+    row('Speech voices', `${voices.length} installed`, 'amber') +
+    row('Voice sample', escapeHtml(data.voiceSample.join(', ')) || '—', 'dim') +
+    row('WebGL extensions', `${gl.extCount} supported, WebGL2: ${gl.isWebgl2}`) +
+    row('Max texture size', gl.maxTexture) +
+    row('Client hints', `platform: ${data.uaPlatform}, mobile: ${data.uaMobile}`, 'dim') +
+    row('Resources loaded', resources+' requests this page made') +
+    row('Pointer / hover', `${data.pointerType}, hover: ${data.hover}`) +
+    row('Gamepads connected', gamepads) +
+    row('Installed as app', standalone ? 'yes (standalone/PWA)' : 'no, in-browser tab', 'dim') +
+    row('Device APIs available', Object.entries(capabilities).filter(([,v])=>v).map(([k])=>k).join(', ') || 'none', 'dim') +
+    row('CSS support', Object.entries(cssFeatures).map(([k,v])=>`${k}:${v?'✓':'✗'}`).join('  '), 'dim')
+  );
+}
+
+/* ================= ABOUT YOU (derived summary) ================= */
+function panelAboutYou(){
+  const el = makePanel('about','YOU','About You','What all the above adds up to, in plain terms');
+  const langs = safe(()=>navigator.languages.join(', '));
+  const tz = safe(()=>Intl.DateTimeFormat().resolvedOptions().timeZone);
+  fillPanel(el,
+    row('Likely region', `guessed from timezone <span class="amber">${tz}</span> + language <span class="amber">${langs.split(',')[0]}</span>`) +
+    row('Device class', `${safe(()=>navigator.maxTouchPoints>0)} touch, ${safe(()=>navigator.hardwareConcurrency)} cores → ${navigator.maxTouchPoints>0 ? 'likely phone/tablet' : 'likely desktop/laptop'}`) +
+    row('Re-identifiable?', `yes — canvas hash + font list + GPU string together are usually unique enough to track this browser across visits without cookies`, 'red') +
+    row('IP vs. device match', `<span id="tzMatchRow">checking…</span>`, 'dim') +
+    row('What\'s NOT visible', `your name, files on disk, other tabs/apps, or anything outside this browser process`, 'dim')
+  );
+}
+function flagTimezoneMismatch(ipData){
+  const el = document.getElementById('tzMatchRow');
+  if(!el) return;
+  const browserTz = safe(()=>Intl.DateTimeFormat().resolvedOptions().timeZone, '');
+  const ipTz = ipData && ipData.timezone;
+  if(!ipTz){ el.textContent = 'no IP timezone to compare'; return; }
+  if(ipTz === browserTz){
+    el.innerHTML = `<span style="color:var(--teal)">matches</span> — IP-based timezone (${ipTz}) agrees with the device clock`;
+  } else {
+    el.innerHTML = `<span style="color:var(--red)">mismatch</span> — IP says ${ipTz}, device says ${browserTz} (possible VPN/proxy)`;
+  }
+}
+
+/* ================= run everything ================= */
+function runAll(){
+  $grid.innerHTML = '';
+  panelAboutYou();
+  panelSession();
+  panelInteraction();
+  panelBrowser();
+  panelDisplay();
+  panelHardware();
+  panelNetworkLocal();
+  panelLAN();
+  panelTime();
+  panelStorage();
+  panelSensors();
+  panelFingerprint();
+  panelSilent();
+  panelPerformance();
+  // stagger the reveal animation
+  document.querySelectorAll('.panel').forEach((p,i)=>{ p.style.animationDelay = (i*45)+'ms'; });
+}
+runAll();
+
+document.getElementById('rescanBtn').addEventListener('click', runAll);
+</script>
+</body>
+</html>
