@@ -36,15 +36,7 @@ Canvas and font fingerprint, used to show how a browser can be re identified acr
 
 ## Privacy note
 
-There is no export feature and no single object collecting everything into one place. Every panel reads and displays its own data independently. Reload the page and all of it is gone.
-
-## Setup
-
-Clone or download this repo. Rename the html file to index.html if it is not already. Push to a GitHub repo. Go to Settings then Pages. Set source to deploy from a branch, branch main, folder root. Save and wait about a minute. The site will be live at your GitHub Pages URL over HTTPS, which is required for the permission gated panels like geolocation and camera or mic labels to actually work.
-
-## Local option
-
-Run a simple server from the folder, for example python3 -m http.server, then open it from other devices on the same network using that machine's local IP. Permission gated panels will not work this way outside of localhost since they need a secure context.
+There is no export feature and no single object collecting everything into one place. Every panel reads and displays its own data independently. Reload the page and all of it is gone. NOTHING IS LOGGED OR SAVED!
 
 ## Notes
 
